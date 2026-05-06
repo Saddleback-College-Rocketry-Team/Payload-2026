@@ -61,6 +61,8 @@ float lastSDSave;     // last time data was saved to sd
 // Packet for RAM buffer - general sensors
 struct packetRam {
   float ramTime;   // time read data
+
+  // bme sensor
   float bmeAltitude;
   float bmeHumidity;
   float bmePressure; 
