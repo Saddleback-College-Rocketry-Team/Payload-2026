@@ -4,67 +4,50 @@
  * @date 2026-03-07
  * 
  */
-#include <Arduino.h>
-#include <unity.h>
-#include "transmitter.h"
+#ifndef MAIN_CPP
+#define MAIN_CPP
+/***********************************************************************
+ * LIBRARIES
+ **********************************************************************/
+#include <Arduino.h>  // To make it compatible for Platform.IO
+                      // delete if you're using Arduino IDE
+#include <SD.h>       // Teensy SD config
 
-/**
- * @brief Mock serial class for testing without hardware.
- */
-class MockSerial {
-public:
-    void begin(unsigned long) {}
-    void println(const char*) {}
-    void println(long) {}
-    void print(const char*) {}
-};
+#include <SoftwareSerial.h>   // for recieving
+#include <Wire.h>     // Teensy for wire configs
 
-/**
- * @brief Global transmitter instance using mock serial.
- */
-MockSerial mockSerial;
-Transmitter<MockSerial> radio(mockSerial, 18, 1);
+// OUR CUSTOM LIBRARY 
+#include <CSV.h>      // all realted to saving to SD files
+#include <NMEAGPS.h>  // Getting nmea sentences
 
-/**
- * @brief Runs before each test.
- */
-void setUp(void) {
-}
+// SENSOR LIBRARIES
+#include <Adafruit_BME280.h>    // humidity: https://github.com/boschsensortec/BME280_SensorAPI
+#include <Seeed_HM330X.h>       // dust: https://github.com/Seeed-Studio/Seeed_PM2_5_sensor_HM3301
+#include <Adafruit_LTR390.h>    // uv: https://github.com/adafruit/Adafruit_LTR390/tree/master
 
-/**
- * @brief Runs after each test.
- */
-void tearDown(void) {
-}
 
-/**
- * @brief Basic math test example.
- */
-void test_basic_math(void) {
-    TEST_ASSERT_EQUAL_INT(5, 2 + 3);
-}
+#define RADIO_RX 4    // nano D-pin connected to radio RX pin
+#define RADIO_TX 5    // nano D-pin connected to radio TX pin
+#endif
 
-/**
- * @brief Test transmitter begin function.
- *
- * Ensures the function executes without crashing.
- */
-void test_transmitter_begin(void) {
-    radio.begin();
-    TEST_ASSERT_TRUE(true);
-}
+SoftwareSerial Radio(RADIO_RX, RADIO_TX);   // radio 
 
 /**
  * @brief Arduino-style test runner.
  */
 void setup() {
-    UNITY_BEGIN();
+    
+    // BAUD RATES
+  Serial.begin(115200);     // computer / testing
+  Radio.begin(9600);        // radio
 
-    RUN_TEST(test_basic_math);
-    RUN_TEST(test_transmitter_begin);
-
-    UNITY_END();
+  // Check sensor
 }
 
 void loop() {
+    // Testing radio
+    Radio.println("Hello from transmitter!");
+    Serial.println("Message sent");
+
+    // Print sensor
 }
