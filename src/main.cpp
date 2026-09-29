@@ -35,8 +35,8 @@ const uint16_t SIZE_NMEA_SENT = 120;   // (max) size of nmea senteces
 // RATES: rate (millis) = 1000 millis /  times to run per second
 const uint8_t RATE_BUFFER_RAM = 100;   // 10Hz, read sensor data
 const uint8_t RATE_BUFFER_NMEA = 100;  // 10Hz, get gps
-const uint8_t RATE_SD = 1000;          // 1Hz, save to sd
-const uint8_t RATE_TRANS = 1000;       // 1HZ, transmitting
+const uint32_t  RATE_SD = 1000;          // 1Hz, save to sd
+const uint32_t  RATE_TRANS = 1000;       // 1HZ, transmitting
 
 // SENSOR RELATED
 const float SEA_LEVEL = 1013.25;       // sealevel pressure in hPa
