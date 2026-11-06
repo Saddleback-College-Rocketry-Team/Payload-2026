@@ -17,9 +17,7 @@
 #include <CSV.h>      // CSV files
 
 // SENSOR LIBRARIES
-#include <Adafruit_BME280.h>    // humidity: https://github.com/boschsensortec/BME280_SensorAPI
 #include <Seeed_HM330X.h>       // dust: https://github.com/Seeed-Studio/Seeed_PM2_5_sensor_HM3301
-#include <Adafruit_LTR390.h>    // uv: https://github.com/adafruit/Adafruit_LTR390/tree/master
 
 #endif
 
@@ -41,10 +39,10 @@ const float SEA_LEVEL = 1013.25;       // sealevel pressure in hPa
  * CONTANTS AND VARIABLES
  **********************************************************************/
 // CSV FILES
-CSV fileHumid("humidity.csv");
+CSV fileDust("dust.csv");
 
 // SENSOR OBJECTS
-Adafruit_BME280 sensorHumid; // humidity, temp, pressure
+HM330X sensorDust;          // dust particles
 
 // COUNTER
 uint8_t counter_ram = 0;    // index for ram buffer
@@ -62,12 +60,13 @@ float lastSDSave;     // last time data was saved to sd
 struct packetRam {
   float ramTime;   // time read data
 
-  // bme sensor
-  float bmeAltitude;
-  float bmeHumidity;
-  float bmePressure; 
-  float bmeTemp;
+  // dust sensor
 }; // END packetRam
+
+// DUST SENSOR DATA
+struct dustData {
+
+}; // END dustData
 
 /***********************************************************************
  * BUFFERS
@@ -91,15 +90,15 @@ void setup() {
    * CHECK IF SENSORS ARE CONNECTED HERE
    ********************************************************************/
   // CHECK IF BME: humidity, temp, and pressure
-   if (!sensorHumid.begin()) {
-    Serial.println("Error! Cannot find sensor: BME");
+   if (!sensorDust.init()) {
+    Serial.println("Error! Cannot find sensor: dust");
   }
   // sensor code
 
   /*********************************************************************
    * CREATE CSV FILES
    ********************************************************************/
-  fileHumid.createCSV("time,altitude,humidity,pressure,temperature");
+  fileDust.createCSV("time,dust");
   
   // DELAY, milli seconds
   delay(300);
@@ -130,12 +129,8 @@ void loop() {
     BufferRam[counter_ram].ramTime = currentTime;
 
     /*******************************************************************
-     * READ BME DATA: temp, pressure, humidity
+     * READ DUST DATA: temp, pressure, humidity
      ******************************************************************/
-    BufferRam[counter_ram].bmeAltitude = sensorHumid.readAltitude(SEA_LEVEL);
-    BufferRam[counter_ram].bmeHumidity = sensorHumid.readHumidity();
-    BufferRam[counter_ram].bmePressure = sensorHumid.readPressure();
-    BufferRam[counter_ram].bmeTemp = sensorHumid.readTemperature();
 
     // INPUT CODE TO READ SENSORS
     
@@ -160,11 +155,6 @@ void loop() {
     while (indexSave < SIZE_BUFFER_RAM) {
 
       // WRITE TO FILE
-      fileHumid.writeToFile(BufferRam[indexSave].ramTime,
-                            BufferRam[indexSave].bmeAltitude,
-                            BufferRam[indexSave].bmeHumidity,
-                            BufferRam[indexSave].bmePressure,
-                            BufferRam[indexSave].bmeTemp);
 
       // INCREMENT COUNTER
       indexSave++;
