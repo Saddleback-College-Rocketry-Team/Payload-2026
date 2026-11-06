@@ -10,7 +10,14 @@
 #define DUST_SENSOR_H
 
 #include <Arduino.h>
+#include <Wire.h>
 #include <Seeed_HM330X.h>
+
+// Teensy 4.1 HM3301 connections
+#define DUST_SDA_PIN 25
+#define DUST_SCL_PIN 24
+#define DUST_I2C_ADDRESS 0x40
+
 
 /**
  * @struct DustPacket

@@ -1,229 +1,229 @@
 
-// /**
-//  * @file ArduCAMSensor.cpp
-//  * @brief Implementation of ArduCAM camera module
-//  */
+/**
+ * @file ArduCAMSensor.cpp
+ * @brief Implementation of ArduCAM camera module
+ */
 
-// #include "ArduCAMSensor.h"
-// #include <SD.h>
+#include "ArduCAMSensor.h"
+#include <SD.h>
 
-// /**
-//  * @brief Create an ArduCAM sensor object
-//  */
-// ArduCAMSensor::ArduCAMSensor(uint8_t chipSelectPin)
-//     : camera(OV2640, chipSelectPin),
-//       csPin(chipSelectPin) {
-// }
+/**
+ * @brief Create an ArduCAM sensor object
+ */
+ArduCAMSensor::ArduCAMSensor(uint8_t chipSelectPin)
+    : camera(OV2640, chipSelectPin),
+      csPin(chipSelectPin) {
+}
 
-// /**
-//  * @brief Initialize the ArduCAM
-//  */
-// bool ArduCAMSensor::begin() {
+/**
+ * @brief Initialize the ArduCAM
+ */
+bool ArduCAMSensor::begin() {
 
-//   /**
-//    * Start SPI communication.
-//    */
-//   SPI.begin();
+  /**
+   * Start SPI communication.
+   */
+  SPI.begin();
 
-//   /**
-//    * Configure the camera chip-select pin.
-//    */
-//   pinMode(csPin, OUTPUT);
-//   digitalWrite(csPin, HIGH);
+  /**
+   * Configure the camera chip-select pin.
+   */
+  pinMode(csPin, OUTPUT);
+  digitalWrite(csPin, HIGH);
 
-//   /**
-//    * Initialize the ArduCAM SPI interface.
-//    */
-//   camera.write_reg(ARDUCHIP_TEST1, 0x55);
+  /**
+   * Initialize the ArduCAM SPI interface.
+   */
+  camera.write_reg(ARDUCHIP_TEST1, 0x55);
 
-//   /**
-//    * Verify that the SPI interface is responding.
-//    */
-//   if (camera.read_reg(ARDUCHIP_TEST1) != 0x55) {
-//     return false;
-//   }
+  /**
+   * Verify that the SPI interface is responding.
+   */
+  if (camera.read_reg(ARDUCHIP_TEST1) != 0x55) {
+    return false;
+  }
 
-//   /**
-//    * Initialize the camera module.
-//    */
-//   camera.set_format(JPEG);
+  /**
+   * Initialize the camera module.
+   */
+  camera.set_format(JPEG);
 
-//   delay(100);
+  delay(100);
 
-//   /**
-//    * Initialize the OV2640.
-//    */
-//   camera.InitCAM();
+  /**
+   * Initialize the OV2640.
+   */
+  camera.InitCAM();
 
-//   /**
-//    * Set JPEG resolution.
-//    *
-//    * FRAMESIZE_QVGA = 320 x 240
-//    *
-//    * This is intentionally kept relatively small because
-//    * the image will eventually be stored on the SD card.
-//    */
-//   camera.OV2640_set_JPEG_size(OV2640_320x240);
+  /**
+   * Set JPEG resolution.
+   *
+   * FRAMESIZE_QVGA = 320 x 240
+   *
+   * This is intentionally kept relatively small because
+   * the image will eventually be stored on the SD card.
+   */
+  camera.OV2640_set_JPEG_size(OV2640_320x240);
 
-//   delay(100);
+  delay(100);
 
-//   /**
-//    * Clear any previous image data from the FIFO.
-//    */
-//   camera.clear_fifo_flag();
+  /**
+   * Clear any previous image data from the FIFO.
+   */
+  camera.clear_fifo_flag();
 
-//   return true;
-// }
+  return true;
+}
 
-// /**
-//  * @brief Check whether the ArduCAM SPI interface works
-//  */
-// bool ArduCAMSensor::checkSPI() {
+/**
+ * @brief Check whether the ArduCAM SPI interface works
+ */
+bool ArduCAMSensor::checkSPI() {
 
-//   camera.write_reg(ARDUCHIP_TEST1, 0x55);
+  camera.write_reg(ARDUCHIP_TEST1, 0x55);
 
-//   return camera.read_reg(ARDUCHIP_TEST1) == 0x55;
-// }
+  return camera.read_reg(ARDUCHIP_TEST1) == 0x55;
+}
 
-// /**
-//  * @brief Wait for the camera to finish capturing
-//  */
-// bool ArduCAMSensor::waitForCapture() {
+/**
+ * @brief Wait for the camera to finish capturing
+ */
+bool ArduCAMSensor::waitForCapture() {
 
-//   /**
-//    * Wait up to 2 seconds for the capture to complete.
-//    */
-//   const uint32_t timeout = 2000;
-//   uint32_t startTime = millis();
+  /**
+   * Wait up to 2 seconds for the capture to complete.
+   */
+  const uint32_t timeout = 2000;
+  uint32_t startTime = millis();
 
-//   while (!(camera.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK))) {
+  while (!(camera.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK))) {
 
-//     if (millis() - startTime >= timeout) {
-//       return false;
-//     }
+    if (millis() - startTime >= timeout) {
+      return false;
+    }
 
-//     delay(1);
-//   }
+    delay(1);
+  }
 
-//   return true;
-// }
+  return true;
+}
 
-// /**
-//  * @brief Capture an image
-//  */
-// CameraPacket ArduCAMSensor::read() {
+/**
+ * @brief Capture an image
+ */
+CameraPacket ArduCAMSensor::read() {
 
-//   CameraPacket data;
+  CameraPacket data;
 
-//   // Default values
-//   data.cameraOK = false;
-//   data.errorCode = 0;
-//   data.imageSize = 0;
+  // Default values
+  data.cameraOK = false;
+  data.errorCode = 0;
+  data.imageSize = 0;
 
-//   /**
-//    * Verify SPI communication before attempting capture.
-//    */
-//   if (!checkSPI()) {
-//     data.errorCode = 1;
-//     return data;
-//   }
+  /**
+   * Verify SPI communication before attempting capture.
+   */
+  if (!checkSPI()) {
+    data.errorCode = 1;
+    return data;
+  }
 
-//   /**
-//    * Clear the FIFO before taking a new image.
-//    */
-//   camera.clear_fifo_flag();
+  /**
+   * Clear the FIFO before taking a new image.
+   */
+  camera.clear_fifo_flag();
 
-//   /**
-//    * Start image capture.
-//    */
-//   camera.start_capture();
+  /**
+   * Start image capture.
+   */
+  camera.start_capture();
 
-//   /**
-//    * Wait for capture to finish.
-//    */
-//   if (!waitForCapture()) {
-//     data.errorCode = 2;
-//     return data;
-//   }
+  /**
+   * Wait for capture to finish.
+   */
+  if (!waitForCapture()) {
+    data.errorCode = 2;
+    return data;
+  }
 
-//   /**
-//    * Get the number of bytes in the FIFO.
-//    */
-//   data.imageSize = camera.read_fifo_length();
+  /**
+   * Get the number of bytes in the FIFO.
+   */
+  data.imageSize = camera.read_fifo_length();
 
-//   /**
-//    * Make sure the image isn't empty.
-//    */
-//   if (data.imageSize == 0) {
-//     data.errorCode = 1;
-//     return data;
-//   }
+  /**
+   * Make sure the image isn't empty.
+   */
+  if (data.imageSize == 0) {
+    data.errorCode = 1;
+    return data;
+  }
 
-//   /**
-//    * The image was successfully captured.
-//    */
-//   data.cameraOK = true;
-//   data.errorCode = 0;
+  /**
+   * The image was successfully captured.
+   */
+  data.cameraOK = true;
+  data.errorCode = 0;
 
-//   return data;
-// }
+  return data;
+}
 
-// /**
-//  * @brief Save the most recently captured image to an SD card
-//  */
-// bool ArduCAMSensor::saveImage(const char *filename) {
+/**
+ * @brief Save the most recently captured image to an SD card
+ */
+bool ArduCAMSensor::saveImage(const char *filename) {
 
-//   /**
-//    * Get the image size from the camera FIFO.
-//    */
-//   uint32_t length = camera.read_fifo_length();
+  /**
+   * Get the image size from the camera FIFO.
+   */
+  uint32_t length = camera.read_fifo_length();
 
-//   if (length == 0) {
-//     return false;
-//   }
+  if (length == 0) {
+    return false;
+  }
 
-//   /**
-//    * Open the SD file.
-//    */
-//   File imageFile = SD.open(filename, FILE_WRITE);
+  /**
+   * Open the SD file.
+   */
+  File imageFile = SD.open(filename, FILE_WRITE);
 
-//   if (!imageFile) {
-//     return false;
-//   }
+  if (!imageFile) {
+    return false;
+  }
 
-//   /**
-//    * Read image data from the camera FIFO in chunks.
-//    *
-//    * Reading in chunks prevents us from needing to
-//    * allocate the entire image in RAM.
-//    */
-//   const uint16_t BUFFER_SIZE = 256;
-//   uint8_t buffer[BUFFER_SIZE];
+  /**
+   * Read image data from the camera FIFO in chunks.
+   *
+   * Reading in chunks prevents us from needing to
+   * allocate the entire image in RAM.
+   */
+  const uint16_t BUFFER_SIZE = 256;
+  uint8_t buffer[BUFFER_SIZE];
 
-//   uint32_t remaining = length;
+  uint32_t remaining = length;
 
-//   while (remaining > 0) {
+  while (remaining > 0) {
 
-//     uint16_t bytesToRead =
-//         (remaining > BUFFER_SIZE)
-//             ? BUFFER_SIZE
-//             : remaining;
+    uint16_t bytesToRead =
+        (remaining > BUFFER_SIZE)
+            ? BUFFER_SIZE
+            : remaining;
 
-//     for (uint16_t i = 0; i < bytesToRead; i++) {
-//       buffer[i] = camera.read_fifo();
-//     }
+    for (uint16_t i = 0; i < bytesToRead; i++) {
+      buffer[i] = camera.read_fifo();
+    }
 
-//     imageFile.write(buffer, bytesToRead);
+    imageFile.write(buffer, bytesToRead);
 
-//     remaining -= bytesToRead;
-//   }
+    remaining -= bytesToRead;
+  }
 
-//   imageFile.close();
+  imageFile.close();
 
-//   /**
-//    * Clear the FIFO after saving the image.
-//    */
-//   camera.clear_fifo_flag();
+  /**
+   * Clear the FIFO after saving the image.
+   */
+  camera.clear_fifo_flag();
 
-//   return true;
-// }
+  return true;
+}

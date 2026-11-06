@@ -1,6 +1,11 @@
 /**
  * @file DustSensor.cpp
  * @brief Implementation of HM3301 dust sensor module
+ * 
+ * Uses Wire2:
+ * SDA = pin 25
+ * SCL = pin 24
+ * 
  */
 
 #include "DustSensor.h"
