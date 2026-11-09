@@ -1,200 +1,85 @@
-/**
- * @file main.cpp
- * @details Main code, what will be uploaded to microcontroller. This is
- *          assuming the component is a Teensy
- */
-#ifndef MAIN_CPP
-#define MAIN_CPP
-/***********************************************************************
- * LIBRARIES
- **********************************************************************/
-#include <Arduino.h>  // To make it compatible for Platform.IO
-                      // delete if you're using Arduino IDE
-#include <SD.h>       // Teensy SD config
-#include <Wire.h>     // Teensy for wire configs
+/***************************************************************************
+  This is a library for the BME280 humidity, temperature & pressure sensor
 
-// OUR CUSTOM LIBRARY 
-#include <CSV.h>      // all realted to saving to SD files
+  Designed specifically to work with the Adafruit BME280 Breakout
+  ----> http://www.adafruit.com/products/2652
 
-// SENSOR LIBRARIES
-#include <Adafruit_BME280.h>    // humidity: https://github.com/boschsensortec/BME280_SensorAPI
-#endif
+  These sensors use I2C or SPI to communicate, 2 or 4 pins are required
+  to interface. The device's I2C address is either 0x76 or 0x77.
 
-/***********************************************************************
- * VARAIBLES TO CHANGE : rates, serials, etc.
- * Things that we might need to change
- **********************************************************************/
-// SIZES: size = send rate (second) * read rate (Hz)
-const uint8_t SIZE_BUFFER_RAM = 10;
-const uint8_t SIZE_BUFFER_NMEA = 10;
-const uint16_t SIZE_NMEA_SENT = 120;   // (max) size of nmea senteces
+  Adafruit invests time and resources providing this open source code,
+  please support Adafruit andopen-source hardware by purchasing products
+  from Adafruit!
 
-// RATES: rate (millis) = 1000 millis /  times to run per second
-const uint8_t RATE_BUFFER_RAM = 100;   // 10Hz, read sensor data
-const uint8_t RATE_BUFFER_NMEA = 100;  // 10Hz, get gps
-const uint32_t  RATE_SD = 1000;          // 1Hz, save to sd
+  Written by Limor Fried & Kevin Townsend for Adafruit Industries.
+  BSD license, all text above must be included in any redistribution
+  See the LICENSE file for details.
+ ***************************************************************************/
+#include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h>
 
-/***********************************************************************
- * CONTANTS AND VARIABLES
- **********************************************************************/
-// CSV FILES
-CSV fileHumid("humidity.csv");
-File fileNmea = SD.open("nmea.csv", FILE_WRITE);
+#define SEALEVELPRESSURE_HPA (1013.25)
 
-// SENSOR OBJECTS
-Adafruit_BME280 sensorHumid; // humidity, temp, pressure
+Adafruit_BME280 bme; // I2C
+//Adafruit_BME280 bme(BME_CS); // hardware SPI
+//Adafruit_BME280 bme(BME_CS, BME_MOSI, BME_MISO, BME_SCK); // software SPI
 
-// COUNTER
-uint8_t counter_ram = 0;    // index for ram buffer
-uint8_t counter_nmea = 0;   // index for nmea buffer
-uint8_t indexSave = 0;      // index for saving to sd
+unsigned long delayTime;
 
-// VARIABLES FOR KEEPING TRACK OF TIME
-unsigned long currentTime;    // current time, from when sensor was turned on
-unsigned long lastBufferRam;  // last time sensor was read
-unsigned long lastSDSave;     // last time data was saved to sd
-
-// SENSOR RELATED
-const float SEA_LEVEL = 1013.25;       // humidity: sealevel pressure in hPa
-
-/***********************************************************************
- * PACKETS
- **********************************************************************/
-// Packet for RAM buffer - general sensors
-struct packetRam {
-  unsigned long ramTime;   // time read data
-
-  // bme sensor
-  float bmeAltitude;
-  float bmeHumidity;
-  float bmePressure; 
-  float bmeTemp;
-}; // END packetRam
-
-/***********************************************************************
- * BUFFERS
- **********************************************************************/
-// Buffer for all sensors
-packetRam BufferRam[SIZE_BUFFER_RAM];
-
-// Nmea sentences collected
-char BufferNmea[SIZE_BUFFER_NMEA][SIZE_NMEA_SENT];
-
-/***********************************************************************
- * CODE THAT RUNS ONCE
- **********************************************************************/
 void setup() {
-  // I2C CONNECTIONS
-  Wire.begin();     // Default
+    Wire2.begin();
+    Serial.begin(9600);
+    while(!Serial);    // time to get serial running
+    Serial.println(F("BME280 test"));
 
-  // DEBUGGING: for computer
-  Serial.begin(115200);
-
-  // CONFIGS FOR TRANSMITTING OR RECEIVING
-
-  /*********************************************************************
-   * CHECK IF SENSORS ARE CONNECTED HERE
-   ********************************************************************/
-  // CHECK IF BME: humidity, temp, and pressure
-   if (!sensorHumid.begin()) {
-    Serial.println("Error! Cannot find humidity sensor: BME");
-  } // END if (!sensorHumid.begin())
-
-  /*********************************************************************
-   * CREATE CSV FILES
-   ********************************************************************/
-  fileHumid.createCSV("time,altitude,humidity,pressure,temperature");
-
-  // DELAY, milli seconds
-  delay(300);
-
-} // END setup() -------------------------------------------------------
-
-
-
-/***********************************************************************
- * CODE THAT WILL RUN CONTINUOUSLY
- * Make faster tasks first and slower tasks last
- **********************************************************************/
-void loop() {
-  currentTime = millis();
-  
-  /*********************************************************************
-   * RAM BUFFER: READING SENSOR DATA
-   * -------------------------------------------------------------------
-   * Condition:
-   *  if its time to read AND if our buffer isnt full
-   * 
-   * For sensors / data:
-   *  - 
-   ********************************************************************/
-  if (currentTime - lastBufferRam >= RATE_BUFFER_RAM) {
-    // UPDATE LAST TIME READ
-    lastBufferRam = currentTime;
-
-    // SAVE TIME
-    BufferRam[counter_ram].ramTime = currentTime;
-
-    /*******************************************************************
-     * READ BME DATA: temp, pressure, humidity
-     ******************************************************************/
-    BufferRam[counter_ram].bmeAltitude = sensorHumid.readAltitude(SEA_LEVEL);
-    BufferRam[counter_ram].bmeHumidity = sensorHumid.readHumidity();
-    BufferRam[counter_ram].bmePressure = sensorHumid.readPressure();
-    BufferRam[counter_ram].bmeTemp = sensorHumid.readTemperature();
-
-    // INPUT CODE TO READ SENSORS
+    unsigned status;
     
-    // INCREMENT INDEX FOR NEXT READ
-    counter_ram++;
-  } // END if
-
-  /*********************************************************************
-   * SAVING TO SD
-   * -------------------------------------------------------------------
-   * Condition:
-   *  if its time to save OR if our buffer is full
-   * 
-   * For sensors / data:
-   *  -
-   ********************************************************************/
-  if (currentTime - lastSDSave >= RATE_SD) {
-    // UPDATE LAST TIME READ
-    lastSDSave = currentTime;
-
-    while (indexSave < SIZE_BUFFER_RAM) {
-
-      // WRITE TO FILE
-      fileHumid.writeToFile(BufferRam[indexSave].ramTime,
-                            BufferRam[indexSave].bmeAltitude,
-                            BufferRam[indexSave].bmeHumidity,
-                            BufferRam[indexSave].bmePressure,
-                            BufferRam[indexSave].bmeTemp);
-
-      // INCREMENT COUNTER
-      indexSave++;
-
-      // DEBUGGING - OUTPUT TO CONSOL
-      Serial.println("Index: " + indexSave);
-      Serial.print("Altitude: ");
-      Serial.println(BufferRam[counter_ram].bmeAltitude);
-      Serial.print("Humidity: ");
-      Serial.println(BufferRam[counter_ram].bmeHumidity);
-      Serial.print("Pressure: ");
-      Serial.println(BufferRam[counter_ram].bmePressure);
-      Serial.print("Temperature: ");
-      Serial.println(BufferRam[counter_ram].bmeTemp);
-
-    } // END while
+    // default settings
+    status = bme.begin();  
+    // You can also pass in a Wire library object like &Wire2
+    // status = bme.begin(0x76, &Wire2)
+    if (!status) {
+        Serial.println("Could not find a valid BME280 sensor, check wiring, address, sensor ID!");
+        Serial.print("SensorID was: 0x"); Serial.println(bme.sensorID(),16);
+        Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
+        Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
+        Serial.print("        ID of 0x60 represents a BME 280.\n");
+        Serial.print("        ID of 0x61 represents a BME 680.\n");
+        while (1) delay(10);
+    }
     
-    // REST WRITING COUNTERS
-    counter_ram = 0;
-    indexSave = 0;
+    Serial.println("-- Default Test --");
+    delayTime = 1000;
 
-  } // END if
+    Serial.println();
+}
 
-} // END loop() --------------------------------------------------------
 
-/***********************************************************************
- * FUNCTION DEFINITIONS
- **********************************************************************/
+void loop() { 
+    printValues();
+    delay(delayTime);
+}
+
+
+void printValues() {
+    Serial.print("Temperature = ");
+    Serial.print(bme.readTemperature());
+    Serial.println(" °C");
+
+    Serial.print("Pressure = ");
+
+    Serial.print(bme.readPressure() / 100.0F);
+    Serial.println(" hPa");
+
+    Serial.print("Approx. Altitude = ");
+    Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
+    Serial.println(" m");
+
+    Serial.print("Humidity = ");
+    Serial.print(bme.readHumidity());
+    Serial.println(" %");
+
+    Serial.println();
+}
