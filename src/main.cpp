@@ -10,14 +10,22 @@
  **********************************************************************/
 #include <Arduino.h>  // To make it compatible for Platform.IO
                       // delete if you're using Arduino IDE
-#include <Wire.h>     // Teensy for wire configs
 
 // OUR CUSTOM LIBRARY 
 #include <CSV.h>      // all realted to saving to SD files
 
-// SENSOR LIBRARIES
-#include <Adafruit_BME280.h>    // humidity: https://github.com/boschsensortec/BME280_SensorAPI
 #endif
+// SENSOR LIBRARIES
+
+/***********************************************************************
+ * PINS SENSOR ARE CONNECTED TO TEENSY TO
+ * do NOT change unless you change what pins they're connected to
+ **********************************************************************/
+// ACCELOROMETER - ADXL330
+const int ACCEL_PIN_X = A0;   // X axis
+const int ACCEL_PIN_Y = A1;   // Z axis
+const int ACCEL_PIN_Z = A2;   // Y axis
+
 
 /***********************************************************************
  * VARAIBLES TO CHANGE : rates, serials, etc.
@@ -37,11 +45,9 @@ const uint32_t  RATE_SD = 1000;          // 1Hz, save to sd
  * CONTANTS AND VARIABLES
  **********************************************************************/
 // CSV FILES
-CSV fileHumid("humidity.csv");
-File fileNmea = SD.open("nmea.csv", FILE_WRITE);
+CSV fileAccel("accel.csv");
 
 // SENSOR OBJECTS
-Adafruit_BME280 sensorHumid; // humidity, temp, pressure
 
 // COUNTER
 uint8_t counter_ram = 0;    // index for ram buffer
@@ -54,7 +60,6 @@ unsigned long lastBufferRam;  // last time sensor was read
 unsigned long lastSDSave;     // last time data was saved to sd
 
 // SENSOR RELATED
-const float SEA_LEVEL = 1013.25;       // humidity: sealevel pressure in hPa
 
 /***********************************************************************
  * PACKETS
@@ -63,11 +68,10 @@ const float SEA_LEVEL = 1013.25;       // humidity: sealevel pressure in hPa
 struct packetRam {
   unsigned long ramTime;   // time read data
 
-  // bme sensor
-  float bmeAltitude;
-  float bmeHumidity;
-  float bmePressure; 
-  float bmeTemp;
+  // ACCELEROMETER ADXL330  DATA
+  int accelX;   // x axis
+  int accelY;   // y axis
+  int accelZ;   // z axis
 }; // END packetRam
 
 /***********************************************************************
@@ -76,15 +80,10 @@ struct packetRam {
 // Buffer for all sensors
 packetRam BufferRam[SIZE_BUFFER_RAM];
 
-// Nmea sentences collected
-char BufferNmea[SIZE_BUFFER_NMEA][SIZE_NMEA_SENT];
-
 /***********************************************************************
  * CODE THAT RUNS ONCE
  **********************************************************************/
 void setup() {
-  // I2C CONNECTIONS
-  Wire.begin();     // Default
 
   // DEBUGGING: for computer
   Serial.begin(115200);
@@ -94,15 +93,11 @@ void setup() {
   /*********************************************************************
    * CHECK IF SENSORS ARE CONNECTED HERE
    ********************************************************************/
-  // CHECK IF BME: humidity, temp, and pressure
-   if (!sensorHumid.begin()) {
-    Serial.println("Error! Cannot find humidity sensor: BME");
-  } // END if (!sensorHumid.begin())
-
+  
   /*********************************************************************
    * CREATE CSV FILES
    ********************************************************************/
-  fileHumid.createCSV("time,altitude,humidity,pressure,temperature");
+  fileAccel.createCSV("time,x axis,y axis,z axis");
 
   // DELAY, milli seconds
   delay(300);
@@ -135,14 +130,11 @@ void loop() {
     BufferRam[counter_ram].ramTime = currentTime;
 
     /*******************************************************************
-     * READ BME DATA: temp, pressure, humidity
+     * READ ACCELEROMETER DATA: x, y, z axis
      ******************************************************************/
-    BufferRam[counter_ram].bmeAltitude = sensorHumid.readAltitude(SEA_LEVEL);
-    BufferRam[counter_ram].bmeHumidity = sensorHumid.readHumidity();
-    BufferRam[counter_ram].bmePressure = sensorHumid.readPressure();
-    BufferRam[counter_ram].bmeTemp = sensorHumid.readTemperature();
-
-    // INPUT CODE TO READ SENSORS
+    BufferRam[counter_ram].accelX = analogRead(ACCEL_PIN_X);
+    BufferRam[counter_ram].accelY = analogRead(ACCEL_PIN_Y);
+    BufferRam[counter_ram].accelZ = analogRead(ACCEL_PIN_Z);
     
     // INCREMENT INDEX FOR NEXT READ
     counter_ram++;
@@ -164,11 +156,10 @@ void loop() {
     while (indexSave < SIZE_BUFFER_RAM) {
 
       // WRITE TO FILE
-      fileHumid.writeToFile(BufferRam[indexSave].ramTime,
-                            BufferRam[indexSave].bmeAltitude,
-                            BufferRam[indexSave].bmeHumidity,
-                            BufferRam[indexSave].bmePressure,
-                            BufferRam[indexSave].bmeTemp);
+      fileAccel.writeToFile(BufferRam[indexSave].ramTime,
+                            BufferRam[indexSave].accelX,
+                            BufferRam[indexSave].accelY,
+                            BufferRam[indexSave].accelZ);
 
       // INCREMENT COUNTER
       indexSave++;
