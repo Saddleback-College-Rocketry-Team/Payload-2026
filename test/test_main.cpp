@@ -1,5 +1,6 @@
 /*************************************************** 
   This is an example for the LTR390 UV Sensor
+<<<<<<< Updated upstream
 
   Designed specifically to work with the LTR390 UV sensor from Adafruit
   ----> https://www.adafruit.com
@@ -12,6 +13,20 @@
 
 Adafruit_LTR390 ltr = Adafruit_LTR390();
 
+=======
+
+  Designed specifically to work with the LTR390 UV sensor from Adafruit
+  ----> https://www.adafruit.com
+
+  These sensors use I2C to communicate, 2 pins are required to  
+  interface
+ ****************************************************/
+ 
+#include "Adafruit_LTR390.h"
+
+Adafruit_LTR390 ltr = Adafruit_LTR390();
+
+>>>>>>> Stashed changes
 void setup() {
   Serial.begin(115200);
   Serial.println("Adafruit LTR-390 test");
@@ -61,4 +76,8 @@ void loop() {
   }
   
   delay(100);
+<<<<<<< Updated upstream
 }
+=======
+}
+>>>>>>> Stashed changes

@@ -30,10 +30,7 @@ const uint8_t SIZE_BUFFER_RAM = 10;
 
 // RATES: rate (millis) = 1000 millis /  times to run per second
 const uint8_t RATE_BUFFER_RAM = 100;   // 10Hz, read sensor data
-const uint8_t RATE_SD = 1000;          // 1Hz, save to sd
-
-// SENSOR RELATED
-const float SEA_LEVEL = 1013.25;       // sealevel pressure in hPa
+const uint32_t RATE_SD        = 1000; // 1Hz, save to sd
 
 /***********************************************************************
  * CONTANTS AND VARIABLES
@@ -42,7 +39,7 @@ const float SEA_LEVEL = 1013.25;       // sealevel pressure in hPa
 CSV fileUV("uv.csv");
 
 // SENSOR OBJECTS
-Adafruit_LTR390 sensorUV = Adafruit_LTR390 (); // uv
+Adafruit_LTR390 sensorUV = Adafruit_LTR390();   // dust paticulates
 
 // COUNTER
 uint8_t counter_ram = 0;    // index for ram buffer
@@ -85,15 +82,16 @@ void setup() {
   /*********************************************************************
    * CHECK IF SENSORS ARE CONNECTED HERE
    ********************************************************************/
-  // CHECK UV
-   if (!sensorUV.begin()) {
-    Serial.println("Error! Cannot find sensor: UV");
-  }
   // SET UV MODES
   sensorUV.setMode(LTR390_MODE_UVS);                // if getting uv or av data
   sensorUV.enable(true);                            // enable sensor
   sensorUV.setGain(LTR390_GAIN_1);                  // how many data per reading
   sensorUV.setResolution(LTR390_RESOLUTION_13BIT);  // how many bits per reading
+
+   // CHECK UV: particulates
+   if (!sensorUV.begin()) {
+    Serial.println("Error! Cannot find uv sensor: LTR390");
+  }
   
   // sensor code
 
