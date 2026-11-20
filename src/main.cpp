@@ -143,6 +143,20 @@ void loop() {
     BufferRam[counter_ram].bmeTemp = sensorHumid.readTemperature();
 
     // INPUT CODE TO READ SENSORS
+
+    // DEBUGGING: OUTPUTTING TO SERIAL PORT
+    Serial.print("Counter: ");
+    Serial.println(counter_ram);
+    Serial.print("Time: ");
+    Serial.println(BufferRam[counter_ram].ramTime);
+    Serial.print("Altitude: ");
+    Serial.println(BufferRam[counter_ram].bmeAltitude);
+    Serial.print("Humididty: ");
+    Serial.println(BufferRam[counter_ram].bmeHumidity);
+    Serial.print("Pressure: ");
+    Serial.println(BufferRam[counter_ram].bmePressure);
+    Serial.print("Temperature: ");
+    Serial.println(BufferRam[counter_ram].bmeTemp);
     
     // INCREMENT INDEX FOR NEXT READ
     counter_ram++;
