@@ -1,70 +1,64 @@
-/**
- * @file test_main.cpp
- * @brief file that will be to test things
- * @date 2026-03-07
- * 
- */
+/*************************************************** 
+  This is an example for the LTR390 UV Sensor
+
+  Designed specifically to work with the LTR390 UV sensor from Adafruit
+  ----> https://www.adafruit.com
+
+  These sensors use I2C to communicate, 2 pins are required to  
+  interface
+ ****************************************************/
 #include <Arduino.h>
-#include <unity.h>
-#include "transmitter.h"
+#include "Adafruit_LTR390.h"
 
-/**
- * @brief Mock serial class for testing without hardware.
- */
-class MockSerial {
-public:
-    void begin(unsigned long) {}
-    void println(const char*) {}
-    void println(long) {}
-    void print(const char*) {}
-};
+Adafruit_LTR390 ltr = Adafruit_LTR390();
 
-/**
- * @brief Global transmitter instance using mock serial.
- */
-MockSerial mockSerial;
-Transmitter<MockSerial> radio(mockSerial, 18, 1);
-
-/**
- * @brief Runs before each test.
- */
-void setUp(void) {
-}
-
-/**
- * @brief Runs after each test.
- */
-void tearDown(void) {
-}
-
-/**
- * @brief Basic math test example.
- */
-void test_basic_math(void) {
-    TEST_ASSERT_EQUAL_INT(5, 2 + 3);
-}
-
-/**
- * @brief Test transmitter begin function.
- *
- * Ensures the function executes without crashing.
- */
-void test_transmitter_begin(void) {
-    radio.begin();
-    TEST_ASSERT_TRUE(true);
-}
-
-/**
- * @brief Arduino-style test runner.
- */
 void setup() {
-    UNITY_BEGIN();
+  Serial.begin(115200);
+  Serial.println("Adafruit LTR-390 test");
 
-    RUN_TEST(test_basic_math);
-    RUN_TEST(test_transmitter_begin);
+  if ( ! ltr.begin() ) {
+    Serial.println("Couldn't find LTR sensor!");
+    while (1) delay(10);
+  }
+  Serial.println("Found LTR sensor!");
 
-    UNITY_END();
+  ltr.setMode(LTR390_MODE_UVS);
+  if (ltr.getMode() == LTR390_MODE_ALS) {
+    Serial.println("In ALS mode");
+  } else {
+    Serial.println("In UVS mode");
+  }
+
+  ltr.setGain(LTR390_GAIN_3);
+  Serial.print("Gain : ");
+  switch (ltr.getGain()) {
+    case LTR390_GAIN_1: Serial.println(1); break;
+    case LTR390_GAIN_3: Serial.println(3); break;
+    case LTR390_GAIN_6: Serial.println(6); break;
+    case LTR390_GAIN_9: Serial.println(9); break;
+    case LTR390_GAIN_18: Serial.println(18); break;
+  }
+
+  ltr.setResolution(LTR390_RESOLUTION_16BIT);
+  Serial.print("Resolution : ");
+  switch (ltr.getResolution()) {
+    case LTR390_RESOLUTION_13BIT: Serial.println(13); break;
+    case LTR390_RESOLUTION_16BIT: Serial.println(16); break;
+    case LTR390_RESOLUTION_17BIT: Serial.println(17); break;
+    case LTR390_RESOLUTION_18BIT: Serial.println(18); break;
+    case LTR390_RESOLUTION_19BIT: Serial.println(19); break;
+    case LTR390_RESOLUTION_20BIT: Serial.println(20); break;
+  }
+
+  ltr.setThresholds(100, 1000);
+  ltr.configInterrupt(true, LTR390_MODE_UVS);
 }
 
 void loop() {
+  if (ltr.newDataAvailable()) {
+      Serial.print("UV data: "); 
+      Serial.print(ltr.readUVS());
+  }
+  
+  delay(100);
 }
