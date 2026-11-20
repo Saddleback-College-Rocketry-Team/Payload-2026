@@ -12,7 +12,7 @@
                       // delete if you're using Arduino IDE
 
 // OUR CUSTOM LIBRARY 
-#include <CSV.h>      // all realted to saving to SD files
+//#include <CSV.h>      // all realted to saving to SD files
 
 #endif
 // SENSOR LIBRARIES
@@ -45,7 +45,7 @@ const uint32_t  RATE_SD = 1000;          // 1Hz, save to sd
  * CONTANTS AND VARIABLES
  **********************************************************************/
 // CSV FILES
-CSV fileAccel("accel.csv");
+//CSV fileAccel("accel.csv");
 
 // SENSOR OBJECTS
 
@@ -97,7 +97,7 @@ void setup() {
   /*********************************************************************
    * CREATE CSV FILES
    ********************************************************************/
-  fileAccel.createCSV("time,x axis,y axis,z axis");
+ // fileAccel.createCSV("time,x axis,y axis,z axis");
 
   // DELAY, milli seconds
   delay(300);
@@ -135,9 +135,28 @@ void loop() {
     BufferRam[counter_ram].accelX = analogRead(ACCEL_PIN_X);
     BufferRam[counter_ram].accelY = analogRead(ACCEL_PIN_Y);
     BufferRam[counter_ram].accelZ = analogRead(ACCEL_PIN_Z);
+
+
+    // DISPLAY SENSOR DATA ON SERIAL MONITOR
+  Serial.print("Time: ");
+  Serial.print(currentTime);
+
+  Serial.print(" ms | X: ");
+  Serial.print(BufferRam[counter_ram].accelX);
+
+  Serial.print(" | Y: ");
+  Serial.print(BufferRam[counter_ram].accelY);
+
+  Serial.print(" | Z: ");
+  Serial.println(BufferRam[counter_ram].accelZ);
+
     
     // INCREMENT INDEX FOR NEXT READ
     counter_ram++;
+
+    
+
+
   } // END if
 
   /*********************************************************************
@@ -149,28 +168,28 @@ void loop() {
    * For sensors / data:
    *  -
    ********************************************************************/
-  if (currentTime - lastSDSave >= RATE_SD) {
-    // UPDATE LAST TIME READ
-    lastSDSave = currentTime;
+   if (currentTime - lastSDSave >= RATE_SD) {
+     // UPDATE LAST TIME READ
+       lastSDSave = currentTime;
 
-    while (indexSave < SIZE_BUFFER_RAM) {
+       while (indexSave < SIZE_BUFFER_RAM) {
 
-      // WRITE TO FILE
-      fileAccel.writeToFile(BufferRam[indexSave].ramTime,
-                            BufferRam[indexSave].accelX,
-                            BufferRam[indexSave].accelY,
-                            BufferRam[indexSave].accelZ);
+  //     // WRITE TO FILE
+  //     fileAccel.writeToFile(BufferRam[indexSave].ramTime,
+  //                           BufferRam[indexSave].accelX,
+  //                           BufferRam[indexSave].accelY,
+  //                           BufferRam[indexSave].accelZ);
 
-      // INCREMENT COUNTER
-      indexSave++;
+       // INCREMENT COUNTER
+       indexSave++;
 
-    } // END while
+     } // END while
     
-    // REST WRITING COUNTERS
-    counter_ram = 0;
-    indexSave = 0;
+  //   // REST WRITING COUNTERS
+     counter_ram = 0;
+     indexSave = 0;
 
-  } // END if
+   } // END if
 
 } // END loop() --------------------------------------------------------
 
